@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <title>Login with TOTP</title>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        #qrcode {
+            margin-bottom: 20px;
+        }
+
+        /* Popup container - can be anything you want */
+        .popup {
+            display: none;
+            /* Hidden by default */
+            position: fixed;
+            /* Stay in place */
+            z-index: 1;
+            /* Sit on top */
+            left: 0;
+            top: 0;
+            width: 100%;
+            /* Full width */
+            height: 100%;
+            /* Full height */
+            overflow: auto;
+            /* Enable scroll if needed */
+            background-color: rgb(0, 0, 0);
+            /* Fallback color */
+            background-color: rgba(0, 0, 0, 0.4);
+            /* Black w/ opacity */
+        }
+
+        /* Popup content */
+        .popup-content {
+            background-color: #fefefe;
+            margin: 15% auto;
+            /* 15% from the top and centered */
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%;
+            /* Could be more or less, depending on screen size */
+        }
+
+        /* Close button */
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+        }
+
+        .close:hover,
+        .close:focus {
+            color: black;
+            text-decoration: none;
+            cursor: pointer;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="MainPopup" class="popup">
+        <div id="MainPopupContent"></div>
+    </div>
+    <div id="app">
+        <h1>Login</h1>
+        <form @submit.prevent="handleSubmit">
+            <div>
+                <label for="username">Username:</label>
+                <input type="text" id="username" v-model="username">
+            </div>
+            <div>
+                <label for="password">Password:</label>
+                <input type="password" id="password" v-model="password">
+            </div>
+            <div>
+                <label for="TOTP">Password:</label>
+                <input type="password" id="totp" v-model="totp">
+            </div>
+            <button type="submit">Login</button>
+        </form>
+    </div>
+
+    <script>
+
+
+        // Close the popup
+        function closePopup() {
+            const popup = document.getElementById('myPopup');
+            popup.style.display = 'none';
+        }
+        // Get the close button element
+        // const closeButton = document.querySelector('.close');
+        // closeButton.addEventListener('click', closePopup);
+
+        function generatePopupContent() {
+            return `
+            <div class="popup-content">
+                <div id="secret">Scan Secret</div>
+                <div id="qrcode"></div>
+                <form @submit.prevent="handleValidate">
+                    <div>
+                        <input type="password" id="password" v-model="totp" placeholder="Enter your TOTP">
+                        <button type="submit">Validate</button>
+                    </div>
+                </form>
+                <div id="message"></div>
+            </div>
+        `;
+        }
+        async function loadPopupContent() {
+            const response = await fetch('popup.html');
+            const content = await response.text();
+            document.querySelector('#MainPopupContent').innerHTML = content;
+
+            // Add event listener to the close button after loading content
+            const closeButton = document.querySelector('.close');
+            if (closeButton) {
+                closeButton.addEventListener('click', closePopup);
+            }
+            return content;
+        }
+
+        // Show the popup
+        // function showPopup(secretKey, qrCodeUrl) {
+        //     const popupContent = generatePopupContent();
+        //     const popup = document.getElementById('myPopup');
+        //     document.getElementById('popupContent').innerHTML = popupContent;
+        //     popup.style.display = 'block';
+
+        //     // Dynamically load the QR code script
+        //     const script = document.createElement('script');
+        //     script.src = 'https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js';
+        //     script.onload = function () {
+        //         // Your inline script here
+        //         console.log('Script loaded');
+        //         new QRCode(document.getElementById("qrcode"), {
+        //             text: qrCodeUrl,
+        //             width: 128,
+        //             height: 128
+        //         });
+        //     };
+        //     document.getElementById("secret").innerHTML = secretKey;
+        //     document.body.appendChild(script);
+
+        // }
+
+        function showPopup(secretKey, qrCodeUrl) {
+            loadPopupContent().then(content => {
+                const popup = document.getElementById('#MainPopupContent');
+                const secretDiv = popup.querySelector("#secretLabel");
+                if (secretDiv) {
+                    secretDiv.innerHTML = secretKey;
+                }
+                popup.style.display = 'block';
+            });
+        }
+        // Global variable to store the X-Auth-Token
+        let xAuthToken = null;
+
+        const app = Vue.createApp({
+            data() {
+                return {
+                    username: 'root',
+                    password: '0penBmc',
+                    totp: ''
+                };
+            },
+            methods: {
+                async handleValidate() {
+                    try {
+                        // Get the current domain
+                        const currentDomain = window.location.origin;
+                        const apiUrl =
+                            `${currentDomain}/redfish/v1/AccountService/Accounts/${this.username}/Actions/ManagerAccount.ValidateSecretKey`;
+
+                        let body = {
+                            Token: this.totp
+                        };
+                        const response = await fetch(apiUrl, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-Auth-Token': xAuthToken
+                            },
+                            mode: 'no-cors'
+                        });
+
+                        if (response.ok) {
+                            const data = await response.json();
+                            console.log('Response Headers:', response.headers);
+                            console.log('Response Body:', data.GenerateSecretKeyResponse);
+                            if (data.Valid === true) {
+                                return this.showHome();
+                            } else {
+                                console.error('Invalid TOTP');
+                            }
+
+
+                        } else {
+                            const data = await response.text();
+                            console.error('Secret key creation failed:', data);
+                        }
+                    } catch (error) {
+                        console.error('Error during validation:', error);
+                    }
+                },
+                async handleSubmit() {
+                    try {
+                        // Get the current domain
+                        const currentDomain = window.location.origin;
+
+                        // Construct the API URL using the current domain
+                        const apiUrl = `${currentDomain}/redfish/v1/SessionService/Sessions`;
+                        console.log('API URL:', apiUrl);
+                        let body = {
+                            UserName: this.username,
+                            Password: this.password
+                        };
+
+                        // Conditionally add the Token field if it has a value
+                        if (this.totp && this.totp.trim() !== '') {
+                            body.Token = this.totp;
+                        }
+
+                        fetch(apiUrl, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Accept': 'application/json' // Optional: specify the expected response format
+                            },
+                            body: JSON.stringify(body)
+                        }).then(response => {
+                            if (response.ok) {
+                                console.log('Response Headers:', response.headers);
+
+
+                                // Extract X-Auth-Token from the response header
+                                const xAuthToken = response.headers.get('X-Auth-Token');
+                                console.log('X-Auth-Token:', xAuthToken);
+                                return response.json();
+                            } else {
+                                return response.text().then(text => { throw new Error(text); });
+                            }
+                        }).then(data => {
+
+                            console.log('Response Body:', data);
+                            // Check if SecretkeyRequired is present and true
+                            if (data.SecretkeyRequired === "True") {
+                                return this.createSecretKey();
+                            } else {
+                                return this.showHome();
+                            }
+                        }).catch(error => {
+                            console.error('Login failed:', error);
+                        });
+                    } catch (error) {
+                        console.error('Error during login:', error);
+                    }
+                },
+                async showHome() {
+                    // Redirect to the home page
+                    window.location.href = '/home.html';
+                },
+                async createSecretKey() {
+                    try {
+                        // Get the current domain
+                        const currentDomain = window.location.origin;
+
+                        // Construct the API URL using the current domain
+                        const apiUrl =
+                            `${currentDomain}/redfish/v1/AccountService/Accounts/${this.username}/Actions/ManagerAccount.GenerateSecretKey`;
+
+                        const response = await fetch(apiUrl, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-Auth-Token': xAuthToken
+                            },
+                            mode: 'no-cors'
+                        });
+
+                        if (response.ok) {
+                            const data = await response.json();
+                            console.log('Response Headers:', response.headers);
+
+                            console.log('Response Body:', data.GenerateSecretKeyResponse);
+
+                            showPopup(data.GenerateSecretKeyResponse.SecretKey, data.GenerateSecretKeyResponse.SecretKeyUrl);
+
+
+                        } else {
+                            const data = await response.text();
+                            console.error('Secret key creation failed:', data);
+                        }
+                    } catch (error) {
+                        console.error('Error during secret key creation:', error);
+                    }
+                }
+            }
+        });
+
+        app.mount('#app');
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <title>TOTP QR Code</title>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        #qrcode {
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="qrcode"></div>
+    <p id="secret-key">Secret Key: ZX6ECCQ7FIDSJDXUNEAMXNY27I</p>
+
+    <script>
+        $(document).ready(function () {
+            // Create the QR code
+            var qrcode = new QRCode(document.getElementById("qrcode"), {
+                width: 256,
+                height: 256,
+                colorDark: "#000000",
+                colorLight: "#ffffff",
+                correctLevel: QRCode.CorrectLevel.H
+            });
+
+            // Generate the QR code data
+            var qrCodeData = "otpauth://totp/abhilashraju@abhilashs-MacBook-Pro.local?secret=ZX6ECCQ7FIDSJDXUNEAMXNY27I&issuer=abhilash";
+
+            // Update the QR code with the data
+            qrcode.makeCode(qrCodeData);
+        });
+    </script>
+</body>
+
+</html>

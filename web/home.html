@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Home</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            font-family: Arial, sans-serif;
+        }
+
+        .welcome-message {
+            text-align: center;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="welcome-message">
+        <h1 id="welcome-text">Welcome To BMC</h1>
+    </div>
+    <script>
+        // Function to get query parameters
+        function getQueryParams() {
+            const params = {};
+            const queryString = window.location.search.substring(1);
+            const regex = /([^&=]+)=([^&]*)/g;
+            let m;
+            while (m = regex.exec(queryString)) {
+                params[decodeURIComponent(m[1])] = decodeURIComponent(m[2]);
+            }
+            return params;
+        }
+
+        // Get the username from the query parameters
+        const params = getQueryParams();
+        const username = params['username'] || 'Guest';
+
+        // Update the welcome message with the username
+        document.getElementById('welcome-text').textContent = `Welcome To BMC ${username}`;
+    </script>
+</body>
+
+</html>
