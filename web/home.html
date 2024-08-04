@@ -4,46 +4,42 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Home</title>
-    <style>
-        body {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            font-family: Arial, sans-serif;
-        }
-
-        .welcome-message {
-            text-align: center;
-        }
-    </style>
+    <title>Popup</title>
+    <link rel="stylesheet" href="home.css">
 </head>
 
 <body>
     <div class="welcome-message">
         <h1 id="welcome-text">Welcome To BMC</h1>
     </div>
-    <script>
-        // Function to get query parameters
-        function getQueryParams() {
-            const params = {};
-            const queryString = window.location.search.substring(1);
-            const regex = /([^&=]+)=([^&]*)/g;
-            let m;
-            while (m = regex.exec(queryString)) {
-                params[decodeURIComponent(m[1])] = decodeURIComponent(m[2]);
-            }
-            return params;
-        }
-
-        // Get the username from the query parameters
-        const params = getQueryParams();
-        const username = params['username'] || 'Guest';
-
-        // Update the welcome message with the username
-        document.getElementById('welcome-text').textContent = `Welcome To BMC ${username}`;
-    </script>
+    <div id="mfa-options">
+        <h3>Enable Multi-Factor Authentication</h3>
+        <ul>
+            <li>
+                <label>
+                    <input type="checkbox" id="google-authenticator" name="mfa-option" value="google-authenticator">
+                    Google Authenticator
+                </label>
+            </li>
+            <li>
+                <label>
+                    <input type="checkbox" id="microsoft-authenticator" name="mfa-option"
+                        value="microsoft-authenticator">
+                    Microsoft Authenticator
+                </label>
+            </li>
+        </ul>
+    </div>
+    <div class="mfa-bypass">
+        <label for="bypass-options">Select MFA Bypass Option:</label>
+        <select id="bypass-options" onchange="submitBypassOption()">
+            <option value="GoogleAuthenticator">Google Authenticator</option>
+            <option value="None" selected>None</option>
+            <option value="All">All</option>
+        </select>
+    </div>
+    <div id="error-message" style="display: none;"></div>
+    <script src="home.js"></script>
 </body>
 
 </html>

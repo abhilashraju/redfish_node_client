@@ -140,7 +140,11 @@ document.getElementById('login-form')
           })
           .catch((error) => {
             console.error('Error:', error);
-            // Handle error (e.g., show an error message)
+            const errorMessageElement =
+                document.getElementById('error-message');
+            errorMessageElement.textContent =
+                'Invalid credentials. Please try again.';
+            errorMessageElement.style.display = 'block';
           });
     });
 // Assume username is stored in a variable called `username`
@@ -149,25 +153,8 @@ const username =
 
 async function showHome() {
   // Construct the URL with the username as a query parameter
-  const url = `${currentDomain}/home.html?username=${
-      encodeURIComponent(model.UserName)}`;
-
-  // Fetch the home.txt file with the username parameter
-  fetch(url)
-      .then(response => {
-        if (!response.ok) {
-          throw new Error('Network response was not ok');
-        }
-        return response.text();
-      })
-      .then(data => {
-        document.body.innerHTML = `<pre>${data}</pre>`;
-      })
-      .catch(error => {
-        console.error('Error fetching home.txt:', error);
-        // Handle error (e.g., show an error message)
-        document.body.innerHTML = `<p>Error loading home content</p>`;
-      });
+  window.location.href =
+      '/home.html?username=' + localStorage.getItem('username');
 };
 async function createSecretKey() {
   try {
