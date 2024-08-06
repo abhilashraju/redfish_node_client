@@ -38,10 +38,14 @@ async function submitBypassOption() {
     if (response.ok) {
       const responseData = await response.text();
       console.log('Request successful:', responseData);
+      showErrorMessage('blue', 'Bypass option updated successfully.');
     } else {
+      showErrorMessage(
+          'red', 'An error occurred while updating bypass option.');
       console.error('Request failed:', response.status, response.statusText);
     }
   } catch (error) {
+    showErrorMessage('red', 'An error occurred while updating bypass option.');
     console.error('Request error:', error);
   }
 }
@@ -69,6 +73,22 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log('Account Service Data:', data);
         microsoftCheckbox.checked = data.MicrosoftAuthenticatorEnabled;
         googleCheckbox.checked = data.GoogleAuthenticatorEnabled;
+        // Handle the data as needed
+      })
+      .catch(error => {
+        console.error('There was a problem with the fetch operation:', error);
+      });
+  fetch('/redfish/v1/AccountService/Accounts/' + username)
+      .then(response => {
+        if (!response.ok) {
+          throw new Error('Network response was not ok');
+        }
+        return response.json();
+      })
+      .then(data => {
+        console.log('Account Data:', data);
+        const bypassOptions = document.getElementById('bypass-options');
+        bypassOptions.value = data.MFABypass.split('.').pop();
         // Handle the data as needed
       })
       .catch(error => {
